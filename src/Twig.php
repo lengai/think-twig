@@ -29,26 +29,25 @@ class Twig
 {
     // 模板引擎参数
     protected $config = [
-        'view_base'         => '',
+        'view_base' => '',
         // 模板起始路径
-        'view_path'         => '',
+        'view_path' => '',
         // 模板文件后缀
-        'view_suffix'       => '.twig',
+        'view_suffix' => '.twig',
         // 模板文件名分隔符
-        'view_depr'         => '/',
-        'cache_path'        => TEMP_PATH,
-        'strict_variables'  => true,
+        'view_depr' => '/',
+        'cache_path' => TEMP_PATH,
+        'strict_variables' => true,
         'auto_add_function' => false,
-        'functions'         => [],
-        'filters'           => [],
-        'globals'           => [],
-        'runtime'           => []
+        'functions' => [],
+        'filters' => [],
+        'globals' => [],
+        'runtime' => []
     ];
 
     public function __construct($config = [])
     {
         $this->config($config);
-
         if (!is_dir($this->config['cache_path'])) {
             if (!mkdir($this->config['cache_path'], 0755, true)) {
                 throw new RuntimeException('Can not make the cache dir!');
@@ -64,7 +63,7 @@ class Twig
      * 模板引擎配置项
      * @access public
      * @param array|string $name
-     * @param mixed        $value
+     * @param mixed $value
      */
     public function config($name, $value = null)
     {
@@ -78,9 +77,9 @@ class Twig
     protected function getTwigConfig()
     {
         return [
-            'debug'            => App::$debug,
-            'auto_reload'      => App::$debug,
-            'cache'            => $this->config['cache_path'],
+            'debug' => App::$debug,
+            'auto_reload' => App::$debug,
+            'cache' => $this->config['cache_path'],
             'strict_variables' => $this->config['strict_variables']
         ];
     }
@@ -139,9 +138,17 @@ class Twig
 
     public function fetch($template, $data = [], $config = [])
     {
+        if (is_file($template)) {
+            $pos = strrpos( $template,DS);
+            $view_path = substr($template, 0, $pos);
+            $name = substr($template, $pos+1);
+            $this->config['view_path'] = $view_path;
+        }
+
         if ($config) {
             $this->config($config);
         }
+
 
         $loader = new Twig_Loader_Filesystem($this->config['view_path']);
 
@@ -161,7 +168,12 @@ class Twig
 
         $twig = $this->getTwig($loader);
 
-        $template = $this->parseTemplate($template);
+        if (is_file($template)) {
+            $template = $name;
+        } else {
+            $template = $this->parseTemplate($template);
+
+        }
 
         $twig->display($template, $data);
     }
@@ -171,7 +183,7 @@ class Twig
         if ($config) {
             $this->config($config);
         }
-        $key    = md5($template);
+        $key = md5($template);
         $loader = new Twig_Loader_Array([$key => $template]);
 
         $twig = $this->getTwig($loader);
@@ -201,8 +213,8 @@ class Twig
 
     private function getModules()
     {
-        $modules      = [];
-        $oDir         = new DirectoryIterator(APP_PATH);
+        $modules = [];
+        $oDir = new DirectoryIterator(APP_PATH);
         $deny_modules = Config::get('deny_module_list');
         foreach ($oDir as $file) {
             if ($file->isDir() && !$file->isDot() && !in_array($file->getFilename(), $deny_modules)) {
